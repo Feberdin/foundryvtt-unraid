@@ -1,0 +1,12 @@
+# Purpose: Keep local runtime data, temporary test files, and secrets out of version control.
+# Input/Output: Git ignores matching files and directories listed below.
+# Invariants: No Foundry data, timed download URLs, or local logs should be committed.
+# Debug: If Git still tracks something here, check `git status --ignored`.
+
+.DS_Store
+.env
+.env.local
+tmp/
+test-output/
+runtime/
+*.log

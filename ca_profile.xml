@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Containers>
+  <TemplateURL>https://github.com/Feberdin/foundryvtt-unraid</TemplateURL>
+  <Beta>False</Beta>
+  <Category>GameServers:</Category>
+  <Date>2026-04-02</Date>
+  <Name>Feberdin Unraid Templates</Name>
+  <Description>Unraid templates maintained by Feberdin. Includes a licensed, self-hosted FoundryVTT bootstrap container.</Description>
+  <Overview>Repository for Unraid XML templates maintained by Feberdin.</Overview>
+  <Support>https://github.com/Feberdin/foundryvtt-unraid/issues</Support>
+  <Project>https://github.com/Feberdin/foundryvtt-unraid</Project>
+  <Icon>https://raw.githubusercontent.com/Feberdin/foundryvtt-unraid/main/images/foundryvtt-unraid.svg</Icon>
+</Containers>

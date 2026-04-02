@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Beta>False</Beta>
+  <Category>GameServers:</Category>
+  <Date>2026-04-02</Date>
+  <TemplateURL>https://raw.githubusercontent.com/Feberdin/foundryvtt-unraid/main/foundryvtt-unraid.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Feberdin/foundryvtt-unraid/main/images/foundryvtt-unraid.svg</Icon>
+  <Name>Feberdin-FoundryVTT</Name>
+  <Repository>ghcr.io/feberdin/foundryvtt-unraid:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Support>https://github.com/Feberdin/foundryvtt-unraid/issues</Support>
+  <Project>https://github.com/Feberdin/foundryvtt-unraid</Project>
+  <Overview>
+    Foundry Virtual Tabletop for Unraid using a license-compliant bootstrap image.
+
+    This container does not ship Foundry itself. On first start it downloads the official Node.js ZIP from a fresh timed URL generated in your Foundry account, stores the application persistently, and keeps your userdata separate for backups and updates.
+
+    Required first-start input:
+    - FOUNDRY_RELEASE_URL: fresh timed URL from the Foundry website
+    - FOUNDRY_ADMIN_KEY: your setup/admin password
+
+    Foundry license key entry still happens inside the Foundry web setup, not through Docker.
+  </Overview>
+  <WebUI>http://[IP]:[PORT:30000]/</WebUI>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Shell>sh</Shell>
+  <ExtraParams></ExtraParams>
+  <PostArgs></PostArgs>
+  <CpuPin></CpuPin>
+  <DonateText></DonateText>
+  <DonateLink></DonateLink>
+  <DonateImg></DonateImg>
+  <BaseImage>node:22-bookworm-slim</BaseImage>
+  <Branch>main</Branch>
+  <License>https://foundryvtt.com/article/license/</License>
+  <GitHub>https://github.com/Feberdin/foundryvtt-unraid</GitHub>
+  <ReadMe>https://raw.githubusercontent.com/Feberdin/foundryvtt-unraid/main/README.md</ReadMe>
+  <RegistryUrl>https://ghcr.io</RegistryUrl>
+  <Version>1.0.0</Version>
+
+  <Config Name="WebUI Port" Target="30000" Default="30000" Mode="tcp" Description="TCP port used by Foundry inside the container." Type="Port" Display="always" Required="true" Mask="false">30000</Config>
+  <Config Name="AppData" Target="/data/foundryvtt" Default="/mnt/user/appdata/foundryvtt" Mode="rw" Description="Persistent application, cache, logs, and userdata directory." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/foundryvtt</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID that should own the files in the mapped AppData path." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID that should own the files in the mapped AppData path." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Foundry Timed URL" Target="FOUNDRY_RELEASE_URL" Default="" Mode="" Description="Required on first install or update. Generate a fresh Node.js timed URL in your Foundry account. The URL expires after a few minutes." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Foundry Admin Key" Target="FOUNDRY_ADMIN_KEY" Default="" Mode="" Description="Recommended setup/admin password for the Foundry configuration screen." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Bootstrap log verbosity: debug, info, warn, or error." Type="Variable" Display="advanced" Required="true" Mask="false">info</Config>
+  <Config Name="Internal Port" Target="FOUNDRY_PORT" Default="30000" Mode="" Description="Foundry listen port inside the container. Normally leave this at 30000." Type="Variable" Display="advanced" Required="true" Mask="false">30000</Config>
+  <Config Name="Hostname" Target="FOUNDRY_HOSTNAME" Default="" Mode="" Description="Optional external hostname used in invitation links when behind a reverse proxy or DNS name." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Route Prefix" Target="FOUNDRY_ROUTE_PREFIX" Default="" Mode="" Description="Optional URL prefix such as foundry when serving behind a reverse proxy path." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Proxy SSL" Target="FOUNDRY_PROXY_SSL" Default="false" Mode="" Description="Set to true when HTTPS is terminated by a reverse proxy." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Proxy Port" Target="FOUNDRY_PROXY_PORT" Default="" Mode="" Description="Optional external proxy port, usually 443 when using HTTPS." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="UPnP" Target="FOUNDRY_UPNP" Default="false" Mode="" Description="Leave false on Unraid unless you explicitly want UPnP." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Auto World" Target="FOUNDRY_WORLD" Default="" Mode="" Description="Optional world ID to auto-launch after Foundry starts." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Force Reinstall" Target="FOUNDRY_FORCE_REINSTALL" Default="false" Mode="" Description="Set true only for repairs or upgrades with a fresh timed URL." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Disable Updates" Target="FOUNDRY_DISABLE_UPDATES" Default="false" Mode="" Description="Optional Foundry startup flag to disable update checks." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Disable IP Discovery" Target="FOUNDRY_DISABLE_IP_DISCOVERY" Default="false" Mode="" Description="Optional Foundry startup flag for special network setups." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+</Container>
