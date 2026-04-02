@@ -4,6 +4,8 @@
 
 Dieses Repo baut ein kleines Docker-Image, das Foundry Virtual Tabletop auf Unraid sauber und nachvollziehbar startet, ohne proprietaere Foundry-Dateien ins Image einzubauen.
 
+Aktueller Fokus dieses Repos ist Foundry VTT Version 14 oder neuer. Seit Version 14 braucht Foundry fuer den Node-basierten Serverbetrieb Node.js 24 oder neuer.
+
 ## Features
 
 - Lizenzkonformes Image: Foundry wird erst beim ersten Start aus einer offiziellen Timed URL geladen.
@@ -18,7 +20,7 @@ Dieses Repo baut ein kleines Docker-Image, das Foundry Virtual Tabletop auf Unra
 
 - Zielplattform ist Unraid mit Docker.
 - Die Foundry-Daten sollen unter `/mnt/user/appdata/foundryvtt` liegen.
-- Es wird die offizielle Foundry Node.js ZIP fuer Version 13 oder neuer verwendet.
+- Es wird die offizielle Foundry Node.js ZIP fuer Version 14 oder neuer verwendet.
 - Die Lizenz bleibt bei dir. Der Schluessel wird nicht in dieses Repo geschrieben.
 - Fuer den ersten Start braucht Foundry Internetzugriff, damit du die Lizenz im Browser aktivieren und die EULA bestaetigen kannst.
 
@@ -64,6 +66,8 @@ docker build -t feberdin/foundryvtt-unraid:local .
 5. Klicke auf `Timed URL`.
 
 Wichtig: Die URL laeuft laut Foundry nach ungefaehr 5 Minuten ab. Generiere sie also erst direkt vor dem ersten Start oder einem Update.
+
+Wichtig: Fuer dieses Repo bitte die `Node.js`-Variante verwenden, nicht die `Linux`-Variante. Eine URL wie `FoundryVTT-Node-14.359.zip` ist richtig, `FoundryVTT-Linux-14.359.zip` ist fuer diesen Container nicht die empfohlene Wahl.
 
 ### 3. Container manuell testen
 
@@ -147,6 +151,11 @@ Update-Ablauf:
 
 Hinweis: Foundry migriert Weltdaten bei groesseren Versionsspruengen. Ein Rueckweg ist dann oft nur per Backup moeglich.
 
+## Versionshinweis
+
+- Foundry VTT 14.x: Dieses Repo ist dafuer gedacht und nutzt Node.js 24.
+- Foundry VTT 13.x: Dafuer waere ein separates Image mit Node.js 22 sinnvoll. Dieses Repo zielt bewusst auf den aktuellen V14-Stand.
+
 ## Troubleshooting
 
 ### Fehler: Timed URL ist abgelaufen
@@ -159,6 +168,18 @@ Fix:
 
 1. Neue Timed URL in Foundry erzeugen.
 2. Container mit der neuen URL erneut starten.
+
+### Fehler: `Foundry Virtual Tabletop requires Node.js version 24 or greater`
+
+Symptom:
+
+- Der Container startet Foundry, beendet sich dann aber mit einem Hinweis auf Node 24.
+
+Fix:
+
+1. Sicherstellen, dass du das aktuelle Image `ghcr.io/feberdin/foundryvtt-unraid:latest` gepullt hast.
+2. Eine frische `Node.js`-Timed-URL fuer deine Foundry-Version erzeugen.
+3. Die bestehende App-Installation unter `/mnt/user/appdata/foundryvtt/app` ersetzen oder einmalig neu installieren.
 
 ### Fehler: Browser erreicht `http://<unraid-ip>:30000` nicht
 

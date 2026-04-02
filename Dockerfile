@@ -3,7 +3,7 @@
 # Invariants: No proprietary Foundry application files are baked into the image. User data lives outside the app directory.
 # Debug: Start the container with LOG_LEVEL=debug and inspect `docker logs <container-name>`.
 
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 
 # Why this exists: The runtime needs curl and unzip to fetch the official archive,
 # gosu to drop privileges after fixing permissions, and tini for clean signal handling.

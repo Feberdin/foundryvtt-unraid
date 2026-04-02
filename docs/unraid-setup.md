@@ -56,6 +56,11 @@ Wenn du spaeter ueber Nginx Proxy Manager, Traefik oder einen anderen Reverse Pr
 5. EULA bestaetigen.
 6. Administrator-Key pruefen.
 
+Wichtig:
+
+- Fuer dieses Setup bitte im Foundry-Portal die `Node.js`-Downloadvariante waehlen.
+- Das aktuelle Repo zielt auf Foundry V14+ und nutzt dafuer Node.js 24.
+
 ## Typische Unraid-Fallen
 
 - Das Appdata-Volume fehlt: Dann wird Foundry bei jedem Neustart neu installiert.

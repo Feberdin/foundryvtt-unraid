@@ -15,6 +15,10 @@
 
     This container does not ship Foundry itself. On first start it downloads the official Node.js ZIP from a fresh timed URL generated in your Foundry account, stores the application persistently, and keeps your userdata separate for backups and updates.
 
+    Target release family:
+    - Foundry VTT 14 or newer
+    - Node.js 24 runtime in the container
+
     Required first-start input:
     - FOUNDRY_RELEASE_URL: fresh timed URL from the Foundry website
     - FOUNDRY_ADMIN_KEY: your setup/admin password
@@ -31,7 +35,7 @@
   <DonateText></DonateText>
   <DonateLink></DonateLink>
   <DonateImg></DonateImg>
-  <BaseImage>node:22-bookworm-slim</BaseImage>
+  <BaseImage>node:24-bookworm-slim</BaseImage>
   <Branch>main</Branch>
   <License>https://foundryvtt.com/article/license/</License>
   <GitHub>https://github.com/Feberdin/foundryvtt-unraid</GitHub>
@@ -43,7 +47,7 @@
   <Config Name="AppData" Target="/data/foundryvtt" Default="/mnt/user/appdata/foundryvtt" Mode="rw" Description="Persistent application, cache, logs, and userdata directory." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/foundryvtt</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID that should own the files in the mapped AppData path." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID that should own the files in the mapped AppData path." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
-  <Config Name="Foundry Timed URL" Target="FOUNDRY_RELEASE_URL" Default="" Mode="" Description="Required on first install or update. Generate a fresh Node.js timed URL in your Foundry account. The URL expires after a few minutes." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Foundry Timed URL" Target="FOUNDRY_RELEASE_URL" Default="" Mode="" Description="Required on first install or update. Generate a fresh Node.js timed URL for Foundry V14+ in your Foundry account. The URL expires after a few minutes." Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="Foundry Admin Key" Target="FOUNDRY_ADMIN_KEY" Default="" Mode="" Description="Recommended setup/admin password for the Foundry configuration screen." Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Bootstrap log verbosity: debug, info, warn, or error." Type="Variable" Display="advanced" Required="true" Mask="false">info</Config>
   <Config Name="Internal Port" Target="FOUNDRY_PORT" Default="30000" Mode="" Description="Foundry listen port inside the container. Normally leave this at 30000." Type="Variable" Display="advanced" Required="true" Mask="false">30000</Config>
