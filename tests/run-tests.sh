@@ -10,6 +10,7 @@ ROOT_DIR="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 
 # Why this exists: A single entry point is easier for non-programmers than remembering several test commands.
 "$ROOT_DIR/tests/render-options.test.sh"
+"$ROOT_DIR/tests/detect-foundry-major.test.sh"
 "$ROOT_DIR/tests/entrypoint.test.sh"
 
 printf "All tests passed.\n"

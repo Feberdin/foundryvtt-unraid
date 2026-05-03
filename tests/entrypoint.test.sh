@@ -9,6 +9,7 @@ set -eu
 ROOT_DIR="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 ENTRYPOINT_PATH="$ROOT_DIR/docker/entrypoint.sh"
 RENDER_OPTIONS_PATH="$ROOT_DIR/docker/render-options.mjs"
+DETECT_FOUNDYRY_MAJOR_PATH="$ROOT_DIR/docker/detect-foundry-major.mjs"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
@@ -73,11 +74,27 @@ for arg in "$@"; do
 done
 mkdir -p "$target"
 printf "console.log(\"fake foundry\");\n" >"$target/main.js"
+cat >"$target/package.json" <<EOF
+{
+  "version": "14.359"
+}
+EOF
 '
 
-make_stub "$TMP_DIR/bin/foundry-node" '#!/bin/sh
+make_stub "$TMP_DIR/bin/foundry-node22" '#!/bin/sh
 set -eu
-printf "%s\n" "$@" >"${ENTRYPOINT_CAPTURE_FILE:?}"
+{
+  printf "runtime=node22\n"
+  printf "%s\n" "$@"
+} >"${ENTRYPOINT_CAPTURE_FILE:?}"
+'
+
+make_stub "$TMP_DIR/bin/foundry-node24" '#!/bin/sh
+set -eu
+{
+  printf "runtime=node24\n"
+  printf "%s\n" "$@"
+} >"${ENTRYPOINT_CAPTURE_FILE:?}"
 '
 
 app_dir="$TMP_DIR/runtime/app"
@@ -93,7 +110,9 @@ if env \
   FOUNDRY_DATA_PATH="$data_dir" \
   FOUNDRY_CACHE_PATH="$cache_dir" \
   RENDER_OPTIONS_SCRIPT="$RENDER_OPTIONS_PATH" \
-  FOUNDRY_NODE_BIN="$TMP_DIR/bin/foundry-node" \
+  DETECT_FOUNDRY_MAJOR_SCRIPT="$DETECT_FOUNDYRY_MAJOR_PATH" \
+  FOUNDRY_NODE22_BIN="$TMP_DIR/bin/foundry-node22" \
+  FOUNDRY_NODE24_BIN="$TMP_DIR/bin/foundry-node24" \
   HOST_NODE_BIN=node \
   sh "$ENTRYPOINT_PATH" >"$TMP_DIR/missing.stdout" 2>"$TMP_DIR/missing.stderr"; then
   printf "Expected bootstrap without FOUNDRY_RELEASE_URL to fail, but it succeeded.\n" >&2
@@ -120,10 +139,13 @@ env \
   FOUNDRY_HOSTNAME=vtt.example.test \
   FOUNDRY_ROUTE_PREFIX=/foundry/ \
   RENDER_OPTIONS_SCRIPT="$RENDER_OPTIONS_PATH" \
-  FOUNDRY_NODE_BIN="$TMP_DIR/bin/foundry-node" \
+  DETECT_FOUNDRY_MAJOR_SCRIPT="$DETECT_FOUNDYRY_MAJOR_PATH" \
+  FOUNDRY_NODE22_BIN="$TMP_DIR/bin/foundry-node22" \
+  FOUNDRY_NODE24_BIN="$TMP_DIR/bin/foundry-node24" \
   HOST_NODE_BIN=node \
   sh "$ENTRYPOINT_PATH" >"$TMP_DIR/happy.stdout" 2>"$TMP_DIR/happy.stderr"
 
+assert_contains "$capture_file" "runtime=node24"
 assert_contains "$capture_file" "$app_dir/main.js"
 assert_contains "$capture_file" "--dataPath=$data_dir"
 assert_contains "$capture_file" "--port=30000"
@@ -134,5 +156,38 @@ assert_contains "$data_dir/Config/options.json" '"hostname": "vtt.example.test"'
 assert_contains "$data_dir/Config/options.json" '"proxySSL": true'
 assert_contains "$data_dir/Config/options.json" '"proxyPort": 443'
 assert_contains "$data_dir/Config/options.json" '"routePrefix": "foundry"'
+
+# Why this exists: Foundry 13.x needs the Node 22 runtime profile, and auto-detection should choose it from the installed app metadata.
+legacy_app_dir="$TMP_DIR/runtime-v13/app"
+legacy_data_dir="$TMP_DIR/runtime-v13/userdata"
+legacy_cache_dir="$TMP_DIR/runtime-v13/cache"
+mkdir -p "$legacy_app_dir" "$legacy_data_dir" "$legacy_cache_dir"
+cat >"$legacy_app_dir/main.js" <<'EOF'
+console.log("fake foundry v13");
+EOF
+cat >"$legacy_app_dir/package.json" <<'EOF'
+{
+  "version": "13.351"
+}
+EOF
+
+legacy_capture_file="$TMP_DIR/foundry-v13-args.txt"
+export ENTRYPOINT_CAPTURE_FILE="$legacy_capture_file"
+
+env \
+  LOG_LEVEL=debug \
+  FOUNDRY_ROOT="$TMP_DIR/runtime-v13" \
+  FOUNDRY_APP_PATH="$legacy_app_dir" \
+  FOUNDRY_DATA_PATH="$legacy_data_dir" \
+  FOUNDRY_CACHE_PATH="$legacy_cache_dir" \
+  RENDER_OPTIONS_SCRIPT="$RENDER_OPTIONS_PATH" \
+  DETECT_FOUNDRY_MAJOR_SCRIPT="$DETECT_FOUNDYRY_MAJOR_PATH" \
+  FOUNDRY_NODE22_BIN="$TMP_DIR/bin/foundry-node22" \
+  FOUNDRY_NODE24_BIN="$TMP_DIR/bin/foundry-node24" \
+  HOST_NODE_BIN=node \
+  sh "$ENTRYPOINT_PATH" >"$TMP_DIR/v13.stdout" 2>"$TMP_DIR/v13.stderr"
+
+assert_contains "$legacy_capture_file" "runtime=node22"
+assert_contains "$legacy_capture_file" "$legacy_app_dir/main.js"
 
 printf "entrypoint tests passed.\n"

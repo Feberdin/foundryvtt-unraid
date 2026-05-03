@@ -8,8 +8,11 @@ set -eu
 
 SCRIPT_NAME="$(basename "$0")"
 RENDER_OPTIONS_SCRIPT="${RENDER_OPTIONS_SCRIPT:-/usr/local/lib/foundry/render-options.mjs}"
-HOST_NODE_BIN="${HOST_NODE_BIN:-node}"
-FOUNDRY_NODE_BIN="${FOUNDRY_NODE_BIN:-node}"
+DETECT_FOUNDRY_MAJOR_SCRIPT="${DETECT_FOUNDRY_MAJOR_SCRIPT:-/usr/local/lib/foundry/detect-foundry-major.mjs}"
+HOST_NODE_BIN="${HOST_NODE_BIN:-/opt/node24/bin/node}"
+FOUNDRY_NODE22_BIN="${FOUNDRY_NODE22_BIN:-/opt/node22/bin/node}"
+FOUNDRY_NODE24_BIN="${FOUNDRY_NODE24_BIN:-/opt/node24/bin/node}"
+FOUNDRY_NODE_BIN="${FOUNDRY_NODE_BIN:-}"
 
 # Why this exists: Simple level handling keeps logs helpful without depending on external tooling.
 timestamp() {
@@ -42,6 +45,10 @@ fail() {
 }
 
 require_command() {
+  if [ -x "$1" ]; then
+    return 0
+  fi
+
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command '$1'. Rebuild the image or verify the PATH."
 }
 
@@ -102,6 +109,27 @@ normalize_route_prefix() {
   export "FOUNDRY_ROUTE_PREFIX=${route_prefix}"
 }
 
+normalize_compatibility_mode() {
+  mode="$(printf "%s" "${FOUNDRY_COMPATIBILITY_MODE:-auto}" | tr "[:upper:]" "[:lower:]")"
+
+  case "$mode" in
+    ""|auto)
+      mode="auto"
+      ;;
+    13|v13)
+      mode="v13"
+      ;;
+    14|v14)
+      mode="v14"
+      ;;
+    *)
+      fail "FOUNDRY_COMPATIBILITY_MODE must be one of: auto, v13, or v14. Current value: '$mode'."
+      ;;
+  esac
+
+  export "FOUNDRY_COMPATIBILITY_MODE=${mode}"
+}
+
 prepare_directories() {
   mkdir -p \
     "$FOUNDRY_ROOT" \
@@ -143,7 +171,7 @@ install_foundry_if_needed() {
   [ -n "${FOUNDRY_RELEASE_URL:-}" ] || fail "FOUNDRY_RELEASE_URL is required for the first install or when FOUNDRY_FORCE_REINSTALL=true. Generate a fresh Node.js timed URL in the Foundry website and restart the container within a few minutes."
 
   if bool_is_true "${FOUNDRY_FORCE_REINSTALL:-false}"; then
-    log warn "FOUNDRY_FORCE_REINSTALL=true. Existing application files in $FOUNDRY_APP_PATH will be replaced."
+    log warn "FOUNDRY_FORCE_REINSTALL=true. Existing application files in $FOUNDRY_APP_PATH will be replaced. This is the correct switch for repairs, upgrades, and intentional downgrades."
     safe_empty_directory "$FOUNDRY_APP_PATH"
   fi
 
@@ -162,6 +190,63 @@ install_foundry_if_needed() {
   if [ ! -f "$FOUNDRY_APP_PATH/main.js" ] && [ ! -f "$FOUNDRY_APP_PATH/resources/app/main.js" ]; then
     fail "The extracted archive does not contain a Foundry entrypoint. For Version 13+ select the Node.js build. For older releases use the Linux build."
   fi
+}
+
+detect_installed_foundry_major() {
+  "$HOST_NODE_BIN" "$DETECT_FOUNDRY_MAJOR_SCRIPT" "$FOUNDRY_APP_PATH" 2>/dev/null || true
+}
+
+runtime_profile_matches_major() {
+  foundry_major="$1"
+  runtime_profile="$2"
+
+  case "${foundry_major}:${runtime_profile}" in
+    13:v13) return 0 ;;
+    14:v14) return 0 ;;
+    15:v14) return 0 ;;
+    16:v14) return 0 ;;
+    17:v14) return 0 ;;
+    18:v14) return 0 ;;
+    19:v14) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+select_foundry_runtime() {
+  runtime_profile="${FOUNDRY_COMPATIBILITY_MODE:-auto}"
+  detected_major="$(detect_installed_foundry_major)"
+
+  if [ "$runtime_profile" = "auto" ]; then
+    [ -n "$detected_major" ] || fail "Could not detect the installed Foundry version automatically. Set FOUNDRY_COMPATIBILITY_MODE to v13 or v14 and retry."
+
+    case "$detected_major" in
+      13) runtime_profile="v13" ;;
+      14|15|16|17|18|19) runtime_profile="v14" ;;
+      *)
+        fail "Detected unsupported Foundry major version '$detected_major'. This image currently supports Foundry 13.x and 14+."
+        ;;
+    esac
+  elif [ -n "$detected_major" ] && ! runtime_profile_matches_major "$detected_major" "$runtime_profile"; then
+    fail "FOUNDRY_COMPATIBILITY_MODE=$runtime_profile does not match the installed Foundry major version $detected_major. Use v13 for Foundry 13.351 or v14 for Foundry 14+."
+  fi
+
+  case "$runtime_profile" in
+    v13)
+      FOUNDRY_NODE_BIN="$FOUNDRY_NODE22_BIN"
+      runtime_node_label="22.x"
+      ;;
+    v14)
+      FOUNDRY_NODE_BIN="$FOUNDRY_NODE24_BIN"
+      runtime_node_label="24.x"
+      ;;
+    *)
+      fail "Internal error: unsupported runtime profile '$runtime_profile'."
+      ;;
+  esac
+
+  export FOUNDRY_NODE_BIN
+  require_command "$FOUNDRY_NODE_BIN"
+  log info "Selected Foundry compatibility mode $runtime_profile. Using Node.js $runtime_node_label via $FOUNDRY_NODE_BIN."
 }
 
 write_options_json() {
@@ -232,7 +317,7 @@ start_foundry() {
     set -- "$@" "--maxlogs=$FOUNDRY_MAX_LOGS"
   fi
 
-  log info "Starting Foundry with port=$FOUNDRY_PORT, data_path=$FOUNDRY_DATA_PATH, app_path=$FOUNDRY_APP_PATH, route_prefix=${FOUNDRY_ROUTE_PREFIX:-<none>}, proxy_ssl=${FOUNDRY_PROXY_SSL:-false}, hostname=${FOUNDRY_HOSTNAME:-<none>}."
+  log info "Starting Foundry with port=$FOUNDRY_PORT, data_path=$FOUNDRY_DATA_PATH, app_path=$FOUNDRY_APP_PATH, route_prefix=${FOUNDRY_ROUTE_PREFIX:-<none>}, proxy_ssl=${FOUNDRY_PROXY_SSL:-false}, hostname=${FOUNDRY_HOSTNAME:-<none>}, compatibility_mode=${FOUNDRY_COMPATIBILITY_MODE:-auto}."
 
   if [ "$(id -u)" -eq 0 ]; then
     exec gosu "${PUID}:${PGID}" "$FOUNDRY_NODE_BIN" "$@"
@@ -268,16 +353,18 @@ if [ -n "${FOUNDRY_PROXY_PORT:-}" ]; then
 fi
 
 normalize_route_prefix
+normalize_compatibility_mode
 
 require_command "curl"
 require_command "unzip"
 require_command "$HOST_NODE_BIN"
-require_command "$FOUNDRY_NODE_BIN"
 
 [ -r "$RENDER_OPTIONS_SCRIPT" ] || fail "Cannot read render script at '$RENDER_OPTIONS_SCRIPT'. Rebuild the image or override RENDER_OPTIONS_SCRIPT for testing."
+[ -r "$DETECT_FOUNDRY_MAJOR_SCRIPT" ] || fail "Cannot read version detect script at '$DETECT_FOUNDRY_MAJOR_SCRIPT'. Rebuild the image or override DETECT_FOUNDRY_MAJOR_SCRIPT for testing."
 
 prepare_directories
 install_foundry_if_needed
+select_foundry_runtime
 write_options_json
 fix_permissions_if_needed
 start_foundry

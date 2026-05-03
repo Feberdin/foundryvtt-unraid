@@ -32,6 +32,7 @@ Falls du das Image spaeter in eine Registry pushen willst, kannst du in Unraid e
 | --- | --- |
 | `FOUNDRY_RELEASE_URL` | frische Timed URL aus dem Foundry-Portal |
 | `FOUNDRY_ADMIN_KEY` | eigener starker Setup-Key |
+| `FOUNDRY_COMPATIBILITY_MODE` | `auto` oder bewusst `v13` fuer Foundry 13.351 |
 | `PUID` | `99` |
 | `PGID` | `100` |
 | `LOG_LEVEL` | `info` |
@@ -59,11 +60,23 @@ Wenn du spaeter ueber Nginx Proxy Manager, Traefik oder einen anderen Reverse Pr
 Wichtig:
 
 - Fuer dieses Setup bitte im Foundry-Portal die `Node.js`-Downloadvariante waehlen.
-- Das aktuelle Repo zielt auf Foundry V14+ und nutzt dafuer Node.js 24.
+- Das aktuelle Repo unterstuetzt Foundry `13.x` ueber `FOUNDRY_COMPATIBILITY_MODE=v13` und Foundry `14+` ueber `auto` oder `v14`.
 
 ## Typische Unraid-Fallen
 
 - Das Appdata-Volume fehlt: Dann wird Foundry bei jedem Neustart neu installiert.
 - Die Timed URL ist alt: Dann scheitert der Download schon vor dem Start.
+- Der Kompatibilitaetsmodus ist falsch: Dann startet Foundry mit der unpassenden Node-Version nicht.
 - Falscher Proxy-Port oder fehlender Hostname: Dann erzeugt Foundry falsche Einladungslinks.
 - Rechteproblem im Appdata-Ordner: Dann kann Foundry `Config`, `Data` oder `Logs` nicht schreiben.
+
+## Gezielter Downgrade auf Foundry 13.351
+
+1. Backup von `/mnt/user/appdata/foundryvtt/userdata` erstellen.
+2. Neue `Node.js`-Timed-URL fuer `13.351` im Foundry-Portal erzeugen.
+3. Im Unraid-Template setzen:
+   - `Compatibility Mode` = `v13`
+   - `Reinstall / Downgrade App Files` = `true`
+   - `Foundry Timed URL` = deine frische `13.351` URL
+4. Container starten.
+5. Nach erfolgreichem Start `Reinstall / Downgrade App Files` wieder auf `false` setzen.

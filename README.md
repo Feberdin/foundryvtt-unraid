@@ -4,7 +4,10 @@
 
 Dieses Repo baut ein kleines Docker-Image, das Foundry Virtual Tabletop auf Unraid sauber und nachvollziehbar startet, ohne proprietaere Foundry-Dateien ins Image einzubauen.
 
-Aktueller Fokus dieses Repos ist Foundry VTT Version 14 oder neuer. Seit Version 14 braucht Foundry fuer den Node-basierten Serverbetrieb Node.js 24 oder neuer.
+Das Image unterstuetzt aktuell zwei Kompatibilitaetsprofile:
+
+- Foundry VTT `13.x` mit Node.js `22`
+- Foundry VTT `14+` mit Node.js `24`
 
 ## Features
 
@@ -20,7 +23,7 @@ Aktueller Fokus dieses Repos ist Foundry VTT Version 14 oder neuer. Seit Version
 
 - Zielplattform ist Unraid mit Docker.
 - Die Foundry-Daten sollen unter `/mnt/user/appdata/foundryvtt` liegen.
-- Es wird die offizielle Foundry Node.js ZIP fuer Version 14 oder neuer verwendet.
+- Es wird die offizielle Foundry Node.js ZIP fuer Version 13 oder neuer verwendet.
 - Die Lizenz bleibt bei dir. Der Schluessel wird nicht in dieses Repo geschrieben.
 - Fuer den ersten Start braucht Foundry Internetzugriff, damit du die Lizenz im Browser aktivieren und die EULA bestaetigen kannst.
 
@@ -33,6 +36,7 @@ Aktueller Fokus dieses Repos ist Foundry VTT Version 14 oder neuer. Seit Version
 ├── README.md
 ├── ca_profile.xml
 ├── docker
+│   ├── detect-foundry-major.mjs
 │   ├── entrypoint.sh
 │   ├── healthcheck.sh
 │   └── render-options.mjs
@@ -42,6 +46,7 @@ Aktueller Fokus dieses Repos ist Foundry VTT Version 14 oder neuer. Seit Version
 ├── images
 │   └── foundryvtt-unraid.svg
 └── tests
+    ├── detect-foundry-major.test.sh
     ├── entrypoint.test.sh
     ├── render-options.test.sh
     └── run-tests.sh
@@ -96,6 +101,7 @@ Beim ersten Aufruf gibst du deinen Foundry-Lizenzschluessel direkt im Foundry-We
 | --- | --- | --- |
 | `FOUNDRY_RELEASE_URL` | leer | Pflicht beim ersten Start oder bei erzwungener Neuinstallation. Frische Timed URL zur Node.js ZIP. |
 | `FOUNDRY_ADMIN_KEY` | leer | Optional. Setzt beim ersten Start den Zugriffsschluessel fuer das Setup-Menue. |
+| `FOUNDRY_COMPATIBILITY_MODE` | `auto` | `auto` erkennt die installierte Foundry-Version. Setze `v13` fuer Foundry `13.351` oder `v14` fuer Foundry `14+`. |
 | `FOUNDRY_PORT` | `30000` | Interner Foundry-Port. |
 | `FOUNDRY_HOSTNAME` | leer | Externer Hostname, der in Einladungslinks genutzt wird. |
 | `FOUNDRY_ROUTE_PREFIX` | leer | Optionaler URL-Praefix wie `foundry`. |
@@ -103,7 +109,7 @@ Beim ersten Aufruf gibst du deinen Foundry-Lizenzschluessel direkt im Foundry-We
 | `FOUNDRY_PROXY_PORT` | leer | Externer Proxy-Port, z. B. `443`. |
 | `FOUNDRY_UPNP` | `false` | Sichere Voreinstellung fuer Serverbetrieb auf Unraid. |
 | `FOUNDRY_WORLD` | leer | Optional. Startet direkt eine bestimmte Welt. |
-| `FOUNDRY_FORCE_REINSTALL` | `false` | Nur fuer Updates oder Reparaturen. Loescht den App-Ordner und entpackt Foundry neu. |
+| `FOUNDRY_FORCE_REINSTALL` | `false` | Fuer Updates, Reparaturen und Downgrades. Loescht den App-Ordner und entpackt Foundry neu. |
 | `PUID` / `PGID` | `99` / `100` | Benutzer- und Gruppen-ID fuer Unraid-Appdata. |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error`. Steuert die Logs des Startskripts. |
 
@@ -145,16 +151,34 @@ Update-Ablauf:
 
 1. Frische Timed URL fuer die gewuenschte Node.js-Version erzeugen.
 2. `FOUNDRY_FORCE_REINSTALL=true` setzen.
-3. `FOUNDRY_RELEASE_URL` auf die neue Timed URL setzen.
-4. Container starten und die Logs beobachten.
-5. Nach erfolgreichem Start `FOUNDRY_FORCE_REINSTALL` wieder auf `false` setzen.
+3. Bei Foundry `13.351` zusaetzlich `FOUNDRY_COMPATIBILITY_MODE=v13` setzen.
+4. Bei Foundry `14+` `FOUNDRY_COMPATIBILITY_MODE=v14` setzen oder `auto` lassen.
+5. `FOUNDRY_RELEASE_URL` auf die neue Timed URL setzen.
+6. Container starten und die Logs beobachten.
+7. Nach erfolgreichem Start `FOUNDRY_FORCE_REINSTALL` wieder auf `false` setzen.
 
 Hinweis: Foundry migriert Weltdaten bei groesseren Versionsspruengen. Ein Rueckweg ist dann oft nur per Backup moeglich.
 
 ## Versionshinweis
 
-- Foundry VTT 14.x: Dieses Repo ist dafuer gedacht und nutzt Node.js 24.
-- Foundry VTT 13.x: Dafuer waere ein separates Image mit Node.js 22 sinnvoll. Dieses Repo zielt bewusst auf den aktuellen V14-Stand.
+- Foundry VTT 13.x: Dieses Repo nutzt dafuer automatisch oder explizit Node.js 22.
+- Foundry VTT 14.x und neuer: Dieses Repo nutzt dafuer automatisch oder explizit Node.js 24.
+- Foundry VTT 12.x und aelter: Nicht Ziel dieses Images.
+
+## Downgrade auf Foundry 13.351
+
+Wenn du bewusst von `14.x` auf `13.351` zurueck willst, ist der sichere Ablauf:
+
+1. Vollstaendiges Backup von `/mnt/user/appdata/foundryvtt/userdata/` erstellen.
+2. Im Foundry-Portal eine frische `Node.js`-Timed-URL fuer `13.351` erzeugen.
+3. Im Container oder Unraid-Template setzen:
+   - `FOUNDRY_COMPATIBILITY_MODE=v13`
+   - `FOUNDRY_FORCE_REINSTALL=true`
+   - `FOUNDRY_RELEASE_URL=<deine frische 13.351 URL>`
+4. Container starten und Logs pruefen.
+5. Nach erfolgreichem Start `FOUNDRY_FORCE_REINSTALL` wieder auf `false` setzen.
+
+Wichtig: Ein Core-Downgrade kann Weltdaten unbrauchbar machen, wenn diese schon nach `14.x` migriert wurden. Das Backup ist hier Pflicht.
 
 ## Troubleshooting
 
@@ -180,6 +204,18 @@ Fix:
 1. Sicherstellen, dass du das aktuelle Image `ghcr.io/feberdin/foundryvtt-unraid:latest` gepullt hast.
 2. Eine frische `Node.js`-Timed-URL fuer deine Foundry-Version erzeugen.
 3. Die bestehende App-Installation unter `/mnt/user/appdata/foundryvtt/app` ersetzen oder einmalig neu installieren.
+
+### Fehler: `FOUNDRY_COMPATIBILITY_MODE=v14 does not match the installed Foundry major version 13`
+
+Symptom:
+
+- Der Container stoppt frueh mit einem Hinweis auf einen unpassenden Kompatibilitaetsmodus.
+
+Fix:
+
+1. Fuer Foundry `13.351` `FOUNDRY_COMPATIBILITY_MODE=v13` setzen.
+2. Fuer Foundry `14+` `FOUNDRY_COMPATIBILITY_MODE=v14` setzen oder `auto` lassen.
+3. Wenn du die Core-Version wechseln willst, `FOUNDRY_FORCE_REINSTALL=true` zusammen mit frischer Timed-URL setzen.
 
 ### Fehler: Browser erreicht `http://<unraid-ip>:30000` nicht
 
