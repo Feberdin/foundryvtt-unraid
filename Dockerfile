@@ -41,14 +41,32 @@ ENV APP_HOME=/opt/foundryvtt \
 
 WORKDIR ${APP_HOME}
 
+# Why this exists: Running as non-root reduces container blast radius for file writes,
+# process execution, and potential escapes.
+RUN set -eu; \
+    mkdir -p "${APP_HOME}"; \
+    if getent group 100 > /dev/null; then \
+      app_group="$(getent group 100 | cut -d: -f1)"; \
+    else \
+      addgroup --system --gid 100 appgroup; \
+      app_group="appgroup"; \
+    fi; \
+    if ! id -u appuser > /dev/null 2>&1; then \
+      adduser --system --ingroup "$app_group" --uid 99 --home /home/appuser --shell /bin/sh --disabled-password appuser; \
+    fi; \
+    mkdir -p /home/appuser && chown -R 99:100 /home/appuser
+
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY docker/detect-foundry-major.mjs /usr/local/lib/foundry/detect-foundry-major.mjs
 COPY docker/render-options.mjs /usr/local/lib/foundry/render-options.mjs
 
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.sh
+RUN chown -R 99:100 "${APP_HOME}" /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.sh /usr/local/lib/foundry
 
 EXPOSE 30000/tcp
+
+USER appuser
 
 VOLUME ["/data/foundryvtt"]
 
