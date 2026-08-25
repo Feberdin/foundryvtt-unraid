@@ -115,7 +115,7 @@ Beim ersten Aufruf gibst du deinen Foundry-Lizenzschluessel direkt im Foundry-We
 
 ## Empfohlenes Unraid-Setup
 
-Die kurze Variante findest du in [docs/unraid-setup.md](/Users/joachim.stiegler/FoundryVTT/docs/unraid-setup.md).
+Die kurze Variante findest du in [docs/unraid-setup.md](docs/unraid-setup.md).
 
 Kurzfassung:
 
@@ -129,7 +129,7 @@ Kurzfassung:
 
 ## Unraid XML-Vorlage
 
-Dieses Repo enthaelt eine direkte Unraid-Vorlage in [foundryvtt-unraid.xml](/Users/joachim.stiegler/FoundryVTT/foundryvtt-unraid.xml). Sobald das Repo auf GitHub liegt, kannst du es in Unraid als Template-Repository hinterlegen.
+Dieses Repo enthaelt eine direkte Unraid-Vorlage in [foundryvtt-unraid.xml](foundryvtt-unraid.xml). Sobald das Repo auf GitHub liegt, kannst du es in Unraid als Template-Repository hinterlegen.
 
 Beispiel fuer spaeter:
 
