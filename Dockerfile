@@ -3,9 +3,9 @@
 # Invariants: No proprietary Foundry application files are baked into the image. User data lives outside the app directory.
 # Debug: Start the container with LOG_LEVEL=debug and inspect `docker logs <container-name>`.
 
-FROM node:22-bookworm-slim AS node22
+FROM node:26-bookworm-slim AS node22
 
-FROM node:24-bookworm-slim AS node24
+FROM node:26-bookworm-slim AS node24
 
 FROM debian:bookworm-slim
 
